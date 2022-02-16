@@ -1,0 +1,9 @@
+[submodule "modules/erc20"]
+	path = modules/erc20
+	url = git@github.com:maple-labs/erc20.git
+[submodule "modules/erc20-helper"]
+	path = modules/erc20-helper
+	url = git@github.com:maple-labs/erc20-helper.git
+[submodule "modules/contract-test-utils"]
+	path = modules/contract-test-utils
+	url = git@github.com:maple-labs/contract-test-utils.git
