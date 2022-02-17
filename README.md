@@ -4,7 +4,7 @@
 
 **DISCLAIMER: This code has NOT been externally audited and is actively being developed. Please do not use in production without taking the appropriate steps to ensure maximum security.**
 
-This repo contains a set of contracts to facilitate on-chain distribution of vesting earnings on an aggregated schedule. This allows for multiple deposits to be made to the same contract on a recurring basis with custom vesting parameters.
+This repo contains a set of contracts to facilitate MPL token migration.
 
 ## Testing and Development
 #### Setup
