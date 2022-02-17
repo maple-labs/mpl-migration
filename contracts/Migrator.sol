@@ -8,16 +8,16 @@ contract Migrator {
     address immutable oldToken;
     address immutable newToken;
 
-    constructor(address old_, address new_) {
-        oldToken = old_;
-        newToken = new_;
+    constructor(address oldToken_, address newToken_) {
+        oldToken = oldToken_;
+        newToken = newToken_;
     }
 
     function migrate(uint256 amount_) external {
         require(amount_ > 0, "M:M:ZERO_AMOUNT");
 
         require(ERC20Helper.transferFrom(oldToken, msg.sender, address(this), amount_), "M:M:TRANSFER_FROM_FAILED");
-        require(ERC20Helper.transfer(newToken, msg.sender, amount_), "M:M:TRANSFER_FAILED");
+        require(ERC20Helper.transfer(newToken, msg.sender, amount_),                    "M:M:TRANSFER_FAILED");
     }
 
 }

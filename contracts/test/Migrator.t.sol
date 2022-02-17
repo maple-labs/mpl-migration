@@ -20,19 +20,25 @@ contract MigratorTest is TestUtils {
         newToken = new MockERC20("New Token", "NT", 18);
 
         migrator = new Migrator(address(oldToken), address(newToken));
+
+        // Mint new token to migrator
+        newToken.mint(address(migrator), OLD_SUPPLY);
     }
 
     function test_migration(uint256 amount_) external {
         amount_ = constrictToRange(amount_, 1, OLD_SUPPLY);
-
-        //Mint new token to migrator
-        newToken.mint(address(migrator), OLD_SUPPLY);
 
         // Mint amount of old token
         oldToken.mint(address(this), amount_);
 
         // Approve
         oldToken.approve(address(migrator), amount_);
+
+        assertEq(oldToken.balanceOf(address(this)),     amount_);
+        assertEq(oldToken.balanceOf(address(migrator)), 0);
+        assertEq(oldToken.allowance(address(this),      address(migrator)), amount_);
+        assertEq(newToken.balanceOf(address(this)),     0);
+        assertEq(newToken.balanceOf(address(migrator)), OLD_SUPPLY);
 
         migrator.migrate(amount_);
 
@@ -44,17 +50,20 @@ contract MigratorTest is TestUtils {
     }
 
     function test_partialMigration(uint256 amount_, uint256 partialAmount_) external {
-        amount_        = constrictToRange(amount_,        3, OLD_SUPPLY);
+        amount_        = constrictToRange(amount_,        2, OLD_SUPPLY);
         partialAmount_ = constrictToRange(partialAmount_, 1, amount_ - 1);
-
-        //Mint new token to migrator
-        newToken.mint(address(migrator), OLD_SUPPLY);
 
         // Mint amount of old token
         oldToken.mint(address(this), amount_);
 
         // Approve partial
         oldToken.approve(address(migrator), partialAmount_);
+
+        assertEq(oldToken.balanceOf(address(this)),     amount_);
+        assertEq(oldToken.balanceOf(address(migrator)), 0);
+        assertEq(oldToken.allowance(address(this),      address(migrator)), partialAmount_);
+        assertEq(newToken.balanceOf(address(this)),     0);
+        assertEq(newToken.balanceOf(address(migrator)), OLD_SUPPLY);
 
         migrator.migrate(partialAmount_);
 
@@ -78,16 +87,10 @@ contract MigratorTest is TestUtils {
     }
 
     function test_zeroAmount() external {
-        //Mint new token to migrator
-        newToken.mint(address(migrator), OLD_SUPPLY);
-
         uint256 amount_ = 0;
 
-         try migrator.migrate(amount_) { 
-            assertTrue(false, "Able to migrate zero amount"); 
-        } catch Error(string memory reason) {
-            assertEq(reason, "M:M:ZERO_AMOUNT");
-        }
+        vm.expectRevert("M:M:ZERO_AMOUNT");
+        migrator.migrate(amount_);
 
         amount_ = 1;
 
@@ -106,17 +109,11 @@ contract MigratorTest is TestUtils {
     function test_failWithoutApprove(uint256 amount_) external {
         amount_ = constrictToRange(amount_, 1, OLD_SUPPLY);
 
-        //Mint new token to migrator
-        newToken.mint(address(migrator), OLD_SUPPLY);
-
         // Mint amount of old token
         oldToken.mint(address(this), amount_);
 
-         try migrator.migrate(amount_) { 
-            assertTrue(false, "Able to migrate without approve"); 
-        } catch Error(string memory reason) {
-            assertEq(reason, "M:M:TRANSFER_FROM_FAILED");
-        }
+        vm.expectRevert("M:M:TRANSFER_FROM_FAILED");
+        migrator.migrate(amount_);
 
         // Approve
         oldToken.approve(address(migrator), amount_);
@@ -133,19 +130,15 @@ contract MigratorTest is TestUtils {
     function test_failWithoutBalance(uint256 amount_) external {
         amount_ = constrictToRange(amount_, 1, OLD_SUPPLY);
 
-        //Mint new token to migrator
-        newToken.mint(address(migrator), OLD_SUPPLY);
+        oldToken.mint(address(this), amount_ - 1);
 
         oldToken.approve(address(migrator), amount_);
 
-        try migrator.migrate(amount_) { 
-            assertTrue(false, "Able to migrate without balance"); 
-        } catch Error(string memory reason) {
-            assertEq(reason, "M:M:TRANSFER_FROM_FAILED");
-        }
+        vm.expectRevert("M:M:TRANSFER_FROM_FAILED");
+        migrator.migrate(amount_);
 
         // Mint
-        oldToken.mint(address(this), amount_);
+        oldToken.mint(address(this), 1);
 
         migrator.migrate(amount_);
 
@@ -158,21 +151,20 @@ contract MigratorTest is TestUtils {
 
     function test_failWithoutNewToken(uint256 amount_) external {
         amount_ = constrictToRange(amount_, 1, OLD_SUPPLY);
-        
+
+        // Burn new supply that was added in setUp
+        newToken.burn(address(migrator), OLD_SUPPLY - amount_ + 1);
+
         // Mint amount of old token
         oldToken.mint(address(this), amount_);
 
         // Approve
         oldToken.approve(address(migrator), amount_);
 
-        try migrator.migrate(amount_) { 
-            assertTrue(false, "Able to migrate without new token"); 
-        } catch Error(string memory reason) {
-            assertEq(reason, "M:M:TRANSFER_FAILED");
-        }
+        vm.expectRevert("M:M:TRANSFER_FAILED");
+        migrator.migrate(amount_);
 
-        //Mint new token to migrator
-        newToken.mint(address(migrator), OLD_SUPPLY);
+        newToken.mint(address(migrator), 1);
 
         migrator.migrate(amount_);
 
@@ -180,9 +172,7 @@ contract MigratorTest is TestUtils {
         assertEq(oldToken.balanceOf(address(migrator)), amount_);
         assertEq(oldToken.allowance(address(this),      address(migrator)), 0);
         assertEq(newToken.balanceOf(address(this)),     amount_);
-        assertEq(newToken.balanceOf(address(migrator)), OLD_SUPPLY - amount_);
+        assertEq(newToken.balanceOf(address(migrator)), 0);
     }
 
-
-    
 }
