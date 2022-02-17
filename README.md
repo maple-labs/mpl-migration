@@ -1,16 +1,16 @@
-# MPLMigration
+# MPL Migration
 
 ![Foundry CI](https://github.com/maple-labs/loan/actions/workflows/push-to-main.yml/badge.svg) [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 
 **DISCLAIMER: This code has NOT been externally audited and is actively being developed. Please do not use in production without taking the appropriate steps to ensure maximum security.**
 
-This repo contains a set of contracts to facilitate on-chain distribution of vesting earnings on an aggregated schedule. This allows for multiple deposits to be made to the same contract on a recurring basis with custom vesting parameters.
+This repo contains a set of contracts to facilitate MPL token migration.
 
 ## Testing and Development
 #### Setup
 ```sh
-git clone git@github.com:maple-labs/revenue-distribution-token.git
-cd revenue-distribution-token
+git clone git@github.com:maple-labs/mpl-migration.git
+cd mpl-migration
 forge update
 ```
 #### Running Tests
