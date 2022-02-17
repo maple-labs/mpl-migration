@@ -9,8 +9,8 @@ This repo contains a set of contracts to facilitate on-chain distribution of ves
 ## Testing and Development
 #### Setup
 ```sh
-git clone git@github.com:maple-labs/revenue-distribution-token.git
-cd revenue-distribution-token
+git clone git@github.com:maple-labs/mpl-migration.git
+cd mpl-migration
 forge update
 ```
 #### Running Tests
