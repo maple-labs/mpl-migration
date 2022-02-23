@@ -5,8 +5,8 @@ import { ERC20Helper } from "../modules/erc20-helper/src/ERC20Helper.sol";
 
 contract Migrator {
 
-    address immutable oldToken;
-    address immutable newToken;
+    address public immutable oldToken;
+    address public immutable newToken;
 
     constructor(address oldToken_, address newToken_) {
         oldToken = oldToken_;
