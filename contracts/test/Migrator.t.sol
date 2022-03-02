@@ -3,7 +3,7 @@ pragma solidity 0.8.7;
 
 import { TestUtils } from "../../modules/contract-test-utils/contracts/test.sol";
 
-import { MockERC20 } from "../../modules/erc20/src/test/mocks/MockERC20.sol";
+import { MockERC20 } from "../../modules/erc20/contracts/test/mocks/MockERC20.sol";
 
 import { Migrator } from "../Migrator.sol";
 
