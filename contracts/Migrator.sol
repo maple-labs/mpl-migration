@@ -14,10 +14,14 @@ contract Migrator {
     }
 
     function migrate(uint256 amount_) external {
+        migrate(msg.sender, amount_);
+    }
+
+    function migrate(address owner, uint256 amount_) public {
         require(amount_ > 0, "M:M:ZERO_AMOUNT");
 
-        require(ERC20Helper.transferFrom(oldToken, msg.sender, address(this), amount_), "M:M:TRANSFER_FROM_FAILED");
-        require(ERC20Helper.transfer(newToken, msg.sender, amount_),                    "M:M:TRANSFER_FAILED");
+        require(ERC20Helper.transferFrom(oldToken, owner, address(this), amount_), "M:M:TRANSFER_FROM_FAILED");
+        require(ERC20Helper.transfer(newToken, owner, amount_),                    "M:M:TRANSFER_FAILED");
     }
 
 }

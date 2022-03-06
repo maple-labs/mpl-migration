@@ -1,11 +1,20 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 pragma solidity 0.8.7;
 
-import { TestUtils } from "../../modules/contract-test-utils/contracts/test.sol";
+import { IERC20 } from "../../modules/erc20/contracts/interfaces/IERC20.sol";
 
+import { TestUtils } from "../../modules/contract-test-utils/contracts/test.sol";
 import { MockERC20 } from "../../modules/erc20/contracts/test/mocks/MockERC20.sol";
 
 import { Migrator } from "../Migrator.sol";
+
+contract SomeAccount {
+
+    function approve(address token_, address spender_, uint256 amount_) external {
+        IERC20(token_).approve(spender_, amount_);
+    }
+
+}
 
 contract MigratorTest is TestUtils {
 
@@ -47,6 +56,32 @@ contract MigratorTest is TestUtils {
         assertEq(oldToken.allowance(address(this),      address(migrator)), 0);
         assertEq(newToken.balanceOf(address(this)),     amount_);
         assertEq(newToken.balanceOf(address(migrator)), OLD_SUPPLY - amount_);
+    }
+
+    function test_migrationForSpecifiedOwner(uint256 amount_) external {
+        amount_ = constrictToRange(amount_, 1, OLD_SUPPLY);
+
+        SomeAccount someAccount = new SomeAccount();
+
+        // Mint amount of old token
+        oldToken.mint(address(someAccount), amount_);
+
+        // Approve
+        someAccount.approve(address(oldToken), address(migrator), amount_);
+
+        assertEq(oldToken.balanceOf(address(someAccount)), amount_);
+        assertEq(oldToken.balanceOf(address(migrator)),    0);
+        assertEq(oldToken.allowance(address(someAccount),  address(migrator)), amount_);
+        assertEq(newToken.balanceOf(address(someAccount)), 0);
+        assertEq(newToken.balanceOf(address(migrator)),    OLD_SUPPLY);
+
+        migrator.migrate(address(someAccount), amount_);
+
+        assertEq(oldToken.balanceOf(address(someAccount)), 0);
+        assertEq(oldToken.balanceOf(address(migrator)),    amount_);
+        assertEq(oldToken.allowance(address(someAccount),  address(migrator)), 0);
+        assertEq(newToken.balanceOf(address(someAccount)), amount_);
+        assertEq(newToken.balanceOf(address(migrator)),    OLD_SUPPLY - amount_);
     }
 
     function test_partialMigration(uint256 amount_, uint256 partialAmount_) external {
