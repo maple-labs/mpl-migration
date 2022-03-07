@@ -43,17 +43,19 @@ contract MigratorTest is TestUtils {
         // Approve
         oldToken.approve(address(migrator), amount_);
 
+        assertEq(oldToken.allowance(address(this), address(migrator)), amount_);
+
         assertEq(oldToken.balanceOf(address(this)),     amount_);
         assertEq(oldToken.balanceOf(address(migrator)), 0);
-        assertEq(oldToken.allowance(address(this),      address(migrator)), amount_);
         assertEq(newToken.balanceOf(address(this)),     0);
         assertEq(newToken.balanceOf(address(migrator)), OLD_SUPPLY);
 
         migrator.migrate(amount_);
 
+        assertEq(oldToken.allowance(address(this), address(migrator)), 0);
+
         assertEq(oldToken.balanceOf(address(this)),     0);
         assertEq(oldToken.balanceOf(address(migrator)), amount_);
-        assertEq(oldToken.allowance(address(this),      address(migrator)), 0);
         assertEq(newToken.balanceOf(address(this)),     amount_);
         assertEq(newToken.balanceOf(address(migrator)), OLD_SUPPLY - amount_);
     }
@@ -69,17 +71,19 @@ contract MigratorTest is TestUtils {
         // Approve
         someAccount.approve(address(oldToken), address(migrator), amount_);
 
+        assertEq(oldToken.allowance(address(someAccount), address(migrator)), amount_);
+
         assertEq(oldToken.balanceOf(address(someAccount)), amount_);
         assertEq(oldToken.balanceOf(address(migrator)),    0);
-        assertEq(oldToken.allowance(address(someAccount),  address(migrator)), amount_);
         assertEq(newToken.balanceOf(address(someAccount)), 0);
         assertEq(newToken.balanceOf(address(migrator)),    OLD_SUPPLY);
 
         migrator.migrate(address(someAccount), amount_);
 
+        assertEq(oldToken.allowance(address(someAccount), address(migrator)), 0);
+
         assertEq(oldToken.balanceOf(address(someAccount)), 0);
         assertEq(oldToken.balanceOf(address(migrator)),    amount_);
-        assertEq(oldToken.allowance(address(someAccount),  address(migrator)), 0);
         assertEq(newToken.balanceOf(address(someAccount)), amount_);
         assertEq(newToken.balanceOf(address(migrator)),    OLD_SUPPLY - amount_);
     }
@@ -94,17 +98,19 @@ contract MigratorTest is TestUtils {
         // Approve partial
         oldToken.approve(address(migrator), partialAmount_);
 
+        assertEq(oldToken.allowance(address(this), address(migrator)), partialAmount_);
+
         assertEq(oldToken.balanceOf(address(this)),     amount_);
         assertEq(oldToken.balanceOf(address(migrator)), 0);
-        assertEq(oldToken.allowance(address(this),      address(migrator)), partialAmount_);
         assertEq(newToken.balanceOf(address(this)),     0);
         assertEq(newToken.balanceOf(address(migrator)), OLD_SUPPLY);
 
         migrator.migrate(partialAmount_);
 
+        assertEq(oldToken.allowance(address(this), address(migrator)), 0);
+
         assertEq(oldToken.balanceOf(address(this)),     amount_ - partialAmount_);
         assertEq(oldToken.balanceOf(address(migrator)), partialAmount_);
-        assertEq(oldToken.allowance(address(this),      address(migrator)), 0);
         assertEq(newToken.balanceOf(address(this)),     partialAmount_);
         assertEq(newToken.balanceOf(address(migrator)), OLD_SUPPLY - partialAmount_);
 
@@ -114,9 +120,10 @@ contract MigratorTest is TestUtils {
 
         migrator.migrate(remaining);
 
+        assertEq(oldToken.allowance(address(this), address(migrator)), 0);
+
         assertEq(oldToken.balanceOf(address(this)),     0);
         assertEq(oldToken.balanceOf(address(migrator)), amount_);
-        assertEq(oldToken.allowance(address(this),      address(migrator)), 0);
         assertEq(newToken.balanceOf(address(this)),     amount_);
         assertEq(newToken.balanceOf(address(migrator)), OLD_SUPPLY - amount_);
     }
@@ -134,9 +141,10 @@ contract MigratorTest is TestUtils {
 
         migrator.migrate(amount_);
 
+        assertEq(oldToken.allowance(address(this), address(migrator)), 0);
+
         assertEq(oldToken.balanceOf(address(this)),     0);
         assertEq(oldToken.balanceOf(address(migrator)), amount_);
-        assertEq(oldToken.allowance(address(this),      address(migrator)), 0);
         assertEq(newToken.balanceOf(address(this)),     amount_);
         assertEq(newToken.balanceOf(address(migrator)), OLD_SUPPLY - amount_);
     }
@@ -155,9 +163,10 @@ contract MigratorTest is TestUtils {
 
         migrator.migrate(amount_);
 
+        assertEq(oldToken.allowance(address(this), address(migrator)), 0);
+
         assertEq(oldToken.balanceOf(address(this)),     0);
         assertEq(oldToken.balanceOf(address(migrator)), amount_);
-        assertEq(oldToken.allowance(address(this),      address(migrator)), 0);
         assertEq(newToken.balanceOf(address(this)),     amount_);
         assertEq(newToken.balanceOf(address(migrator)), OLD_SUPPLY - amount_);
     }
@@ -177,9 +186,10 @@ contract MigratorTest is TestUtils {
 
         migrator.migrate(amount_);
 
+        assertEq(oldToken.allowance(address(this), address(migrator)), 0);
+
         assertEq(oldToken.balanceOf(address(this)),     0);
         assertEq(oldToken.balanceOf(address(migrator)), amount_);
-        assertEq(oldToken.allowance(address(this),      address(migrator)), 0);
         assertEq(newToken.balanceOf(address(this)),     amount_);
         assertEq(newToken.balanceOf(address(migrator)), OLD_SUPPLY - amount_);
     }
@@ -203,9 +213,10 @@ contract MigratorTest is TestUtils {
 
         migrator.migrate(amount_);
 
+        assertEq(oldToken.allowance(address(this), address(migrator)), 0);
+
         assertEq(oldToken.balanceOf(address(this)),     0);
         assertEq(oldToken.balanceOf(address(migrator)), amount_);
-        assertEq(oldToken.allowance(address(this),      address(migrator)), 0);
         assertEq(newToken.balanceOf(address(this)),     amount_);
         assertEq(newToken.balanceOf(address(migrator)), 0);
     }
