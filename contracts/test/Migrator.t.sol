@@ -34,7 +34,102 @@ contract MigratorTest is TestUtils {
         newToken.mint(address(migrator), OLD_SUPPLY);
     }
 
-    function test_migration(uint256 amount_) external {
+    function test_migrate_zeroAmount() external {
+        uint256 amount_ = 0;
+
+        vm.expectRevert("M:M:ZERO_AMOUNT");
+        migrator.migrate(amount_);
+
+        amount_ = 1;
+
+        oldToken.mint(address(this), amount_);
+        oldToken.approve(address(migrator), amount_);
+
+        migrator.migrate(amount_);
+
+        assertEq(oldToken.allowance(address(this), address(migrator)), 0);
+
+        assertEq(oldToken.balanceOf(address(this)),     0);
+        assertEq(oldToken.balanceOf(address(migrator)), amount_);
+        assertEq(newToken.balanceOf(address(this)),     amount_);
+        assertEq(newToken.balanceOf(address(migrator)), OLD_SUPPLY - amount_);
+    }
+
+    function test_migrate_insufficientApproval(uint256 amount_) external {
+        amount_ = constrictToRange(amount_, 1, OLD_SUPPLY);
+
+        // Mint amount of old token
+        oldToken.mint(address(this), amount_);
+
+        oldToken.approve(address(migrator), amount_ - 1);
+
+        vm.expectRevert("M:M:TRANSFER_FROM_FAILED");
+        migrator.migrate(amount_);
+
+        // Approve
+        oldToken.approve(address(migrator), amount_);
+
+        migrator.migrate(amount_);
+
+        assertEq(oldToken.allowance(address(this), address(migrator)), 0);
+
+        assertEq(oldToken.balanceOf(address(this)),     0);
+        assertEq(oldToken.balanceOf(address(migrator)), amount_);
+        assertEq(newToken.balanceOf(address(this)),     amount_);
+        assertEq(newToken.balanceOf(address(migrator)), OLD_SUPPLY - amount_);
+    }
+
+    function test_migrate_insufficientBalance(uint256 amount_) external {
+        amount_ = constrictToRange(amount_, 1, OLD_SUPPLY);
+
+        oldToken.mint(address(this), amount_ - 1);
+
+        oldToken.approve(address(migrator), amount_);
+
+        vm.expectRevert("M:M:TRANSFER_FROM_FAILED");
+        migrator.migrate(amount_);
+
+        // Mint
+        oldToken.mint(address(this), 1);
+
+        migrator.migrate(amount_);
+
+        assertEq(oldToken.allowance(address(this), address(migrator)), 0);
+
+        assertEq(oldToken.balanceOf(address(this)),     0);
+        assertEq(oldToken.balanceOf(address(migrator)), amount_);
+        assertEq(newToken.balanceOf(address(this)),     amount_);
+        assertEq(newToken.balanceOf(address(migrator)), OLD_SUPPLY - amount_);
+    }
+
+    function test_migrate_newTokenInsufficientBalance(uint256 amount_) external {
+        amount_ = constrictToRange(amount_, 1, OLD_SUPPLY);
+
+        // Burn new supply that was added in setUp
+        newToken.burn(address(migrator), OLD_SUPPLY - amount_ + 1);
+
+        // Mint amount of old token
+        oldToken.mint(address(this), amount_);
+
+        // Approve
+        oldToken.approve(address(migrator), amount_);
+
+        vm.expectRevert("M:M:TRANSFER_FAILED");
+        migrator.migrate(amount_);
+
+        newToken.mint(address(migrator), 1);
+
+        migrator.migrate(amount_);
+
+        assertEq(oldToken.allowance(address(this), address(migrator)), 0);
+
+        assertEq(oldToken.balanceOf(address(this)),     0);
+        assertEq(oldToken.balanceOf(address(migrator)), amount_);
+        assertEq(newToken.balanceOf(address(this)),     amount_);
+        assertEq(newToken.balanceOf(address(migrator)), 0);
+    }
+
+    function test_migrate_success(uint256 amount_) external {
         amount_ = constrictToRange(amount_, 1, OLD_SUPPLY);
 
         // Mint amount of old token
@@ -60,7 +155,7 @@ contract MigratorTest is TestUtils {
         assertEq(newToken.balanceOf(address(migrator)), OLD_SUPPLY - amount_);
     }
 
-    function test_migrationForSpecifiedOwner(uint256 amount_) external {
+    function test_migration_specifiedOwner(uint256 amount_) external {
         amount_ = constrictToRange(amount_, 1, OLD_SUPPLY);
 
         SomeAccount someAccount = new SomeAccount();
@@ -88,7 +183,7 @@ contract MigratorTest is TestUtils {
         assertEq(newToken.balanceOf(address(migrator)),    OLD_SUPPLY - amount_);
     }
 
-    function test_partialMigration(uint256 amount_, uint256 partialAmount_) external {
+    function test_migrate_partialMigration(uint256 amount_, uint256 partialAmount_) external {
         amount_        = constrictToRange(amount_,        2, OLD_SUPPLY);
         partialAmount_ = constrictToRange(partialAmount_, 1, amount_ - 1);
 
@@ -126,99 +221,6 @@ contract MigratorTest is TestUtils {
         assertEq(oldToken.balanceOf(address(migrator)), amount_);
         assertEq(newToken.balanceOf(address(this)),     amount_);
         assertEq(newToken.balanceOf(address(migrator)), OLD_SUPPLY - amount_);
-    }
-
-    function test_zeroAmount() external {
-        uint256 amount_ = 0;
-
-        vm.expectRevert("M:M:ZERO_AMOUNT");
-        migrator.migrate(amount_);
-
-        amount_ = 1;
-
-        oldToken.mint(address(this), amount_);
-        oldToken.approve(address(migrator), amount_);
-
-        migrator.migrate(amount_);
-
-        assertEq(oldToken.allowance(address(this), address(migrator)), 0);
-
-        assertEq(oldToken.balanceOf(address(this)),     0);
-        assertEq(oldToken.balanceOf(address(migrator)), amount_);
-        assertEq(newToken.balanceOf(address(this)),     amount_);
-        assertEq(newToken.balanceOf(address(migrator)), OLD_SUPPLY - amount_);
-    }
-
-    function test_failWithoutApprove(uint256 amount_) external {
-        amount_ = constrictToRange(amount_, 1, OLD_SUPPLY);
-
-        // Mint amount of old token
-        oldToken.mint(address(this), amount_);
-
-        vm.expectRevert("M:M:TRANSFER_FROM_FAILED");
-        migrator.migrate(amount_);
-
-        // Approve
-        oldToken.approve(address(migrator), amount_);
-
-        migrator.migrate(amount_);
-
-        assertEq(oldToken.allowance(address(this), address(migrator)), 0);
-
-        assertEq(oldToken.balanceOf(address(this)),     0);
-        assertEq(oldToken.balanceOf(address(migrator)), amount_);
-        assertEq(newToken.balanceOf(address(this)),     amount_);
-        assertEq(newToken.balanceOf(address(migrator)), OLD_SUPPLY - amount_);
-    }
-
-    function test_failWithoutBalance(uint256 amount_) external {
-        amount_ = constrictToRange(amount_, 1, OLD_SUPPLY);
-
-        oldToken.mint(address(this), amount_ - 1);
-
-        oldToken.approve(address(migrator), amount_);
-
-        vm.expectRevert("M:M:TRANSFER_FROM_FAILED");
-        migrator.migrate(amount_);
-
-        // Mint
-        oldToken.mint(address(this), 1);
-
-        migrator.migrate(amount_);
-
-        assertEq(oldToken.allowance(address(this), address(migrator)), 0);
-
-        assertEq(oldToken.balanceOf(address(this)),     0);
-        assertEq(oldToken.balanceOf(address(migrator)), amount_);
-        assertEq(newToken.balanceOf(address(this)),     amount_);
-        assertEq(newToken.balanceOf(address(migrator)), OLD_SUPPLY - amount_);
-    }
-
-    function test_failWithoutNewToken(uint256 amount_) external {
-        amount_ = constrictToRange(amount_, 1, OLD_SUPPLY);
-
-        // Burn new supply that was added in setUp
-        newToken.burn(address(migrator), OLD_SUPPLY - amount_ + 1);
-
-        // Mint amount of old token
-        oldToken.mint(address(this), amount_);
-
-        // Approve
-        oldToken.approve(address(migrator), amount_);
-
-        vm.expectRevert("M:M:TRANSFER_FAILED");
-        migrator.migrate(amount_);
-
-        newToken.mint(address(migrator), 1);
-
-        migrator.migrate(amount_);
-
-        assertEq(oldToken.allowance(address(this), address(migrator)), 0);
-
-        assertEq(oldToken.balanceOf(address(this)),     0);
-        assertEq(oldToken.balanceOf(address(migrator)), amount_);
-        assertEq(newToken.balanceOf(address(this)),     amount_);
-        assertEq(newToken.balanceOf(address(migrator)), 0);
     }
 
 }
