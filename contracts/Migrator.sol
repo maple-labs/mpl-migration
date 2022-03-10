@@ -3,12 +3,16 @@ pragma solidity 0.8.7;
 
 import { ERC20Helper } from "../modules/erc20-helper/src/ERC20Helper.sol";
 
+import { IERC20Like } from "./interfaces/Interfaces.sol";
+
 contract Migrator {
 
     address public immutable oldToken;
     address public immutable newToken;
 
     constructor(address oldToken_, address newToken_) {
+        require(IERC20Like(newToken_).decimals() == IERC20Like(oldToken_).decimals(), "M:C:DECIMAL_MISMATCH");
+
         oldToken = oldToken_;
         newToken = newToken_;
     }
