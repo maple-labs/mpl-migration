@@ -16,6 +16,28 @@ contract SomeAccount {
 
 }
 
+contract MigratorConstructorTest is TestUtils {
+
+    function test_constructor_mismatch_decimals() external {
+        MockERC20 oldToken = new MockERC20("Old Token", "OT", 18);
+        MockERC20 newToken = new MockERC20("New Token", "NT", 17);
+
+        vm.expectRevert("M:C:DECIMAL_MISMATCH");
+        new Migrator(address(oldToken), address(newToken));
+    }
+
+    function test_constructor() external {
+        MockERC20 oldToken = new MockERC20("Old Token", "OT", 18);
+        MockERC20 newToken = new MockERC20("New Token", "NT", 18);
+
+        Migrator migrator = new Migrator(address(oldToken), address(newToken));
+
+        assertEq(migrator.oldToken(), address(oldToken));
+        assertEq(migrator.newToken(), address(newToken));
+    }
+
+}
+
 contract MigratorTest is TestUtils {
 
     uint256 public constant OLD_SUPPLY = 10_000_000 ether;
