@@ -7,8 +7,8 @@ import { IERC20Like } from "./interfaces/Interfaces.sol";
 
 contract Migrator {
 
-    address public immutable oldToken;
     address public immutable newToken;
+    address public immutable oldToken;
 
     constructor(address oldToken_, address newToken_) {
         require(IERC20Like(newToken_).decimals() == IERC20Like(oldToken_).decimals(), "M:C:DECIMAL_MISMATCH");
@@ -22,8 +22,7 @@ contract Migrator {
     }
 
     function migrate(address owner, uint256 amount_) public {
-        require(amount_ > 0, "M:M:ZERO_AMOUNT");
-
+        require(amount_ > uint256(0),                                              "M:M:ZERO_AMOUNT");
         require(ERC20Helper.transferFrom(oldToken, owner, address(this), amount_), "M:M:TRANSFER_FROM_FAILED");
         require(ERC20Helper.transfer(newToken, owner, amount_),                    "M:M:TRANSFER_FAILED");
     }

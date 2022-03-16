@@ -40,209 +40,205 @@ contract MigratorConstructorTest is TestUtils {
 
 contract MigratorTest is TestUtils {
 
-    uint256 public constant OLD_SUPPLY = 10_000_000 ether;
+    uint256 internal constant OLD_SUPPLY = 10_000_000 ether;
 
-    Migrator  migrator;
-    MockERC20 oldToken;
-    MockERC20 newToken;
+    Migrator  internal _migrator;
+    MockERC20 internal _oldToken;
+    MockERC20 internal _newToken;
 
     function setUp() external {
-        oldToken = new MockERC20("Old Token", "OT", 18);
-        newToken = new MockERC20("New Token", "NT", 18);
+        _oldToken = new MockERC20("Old Token", "OT", 18);
+        _newToken = new MockERC20("New Token", "NT", 18);
 
-        migrator = new Migrator(address(oldToken), address(newToken));
+        _migrator = new Migrator(address(_oldToken), address(_newToken));
 
         // Mint new token to migrator
-        newToken.mint(address(migrator), OLD_SUPPLY);
+        _newToken.mint(address(_migrator), OLD_SUPPLY);
     }
 
     function test_migrate_zeroAmount() external {
-        uint256 amount_ = 0;
-
         vm.expectRevert("M:M:ZERO_AMOUNT");
-        migrator.migrate(amount_);
+        _migrator.migrate(0);
 
-        amount_ = 1;
+        _oldToken.mint(address(this), 1);
+        _oldToken.approve(address(_migrator), 1);
 
-        oldToken.mint(address(this), amount_);
-        oldToken.approve(address(migrator), amount_);
+        _migrator.migrate(1);
 
-        migrator.migrate(amount_);
+        assertEq(_oldToken.allowance(address(this), address(_migrator)), 0);
 
-        assertEq(oldToken.allowance(address(this), address(migrator)), 0);
-
-        assertEq(oldToken.balanceOf(address(this)),     0);
-        assertEq(oldToken.balanceOf(address(migrator)), amount_);
-        assertEq(newToken.balanceOf(address(this)),     amount_);
-        assertEq(newToken.balanceOf(address(migrator)), OLD_SUPPLY - amount_);
+        assertEq(_oldToken.balanceOf(address(this)),      0);
+        assertEq(_oldToken.balanceOf(address(_migrator)), 1);
+        assertEq(_newToken.balanceOf(address(this)),      1);
+        assertEq(_newToken.balanceOf(address(_migrator)), OLD_SUPPLY - 1);
     }
 
-    function test_migrate_insufficientApproval(uint256 amount_) external {
+    function testFuzz_migrate_insufficientApproval(uint256 amount_) external {
         amount_ = constrictToRange(amount_, 1, OLD_SUPPLY);
 
         // Mint amount of old token
-        oldToken.mint(address(this), amount_);
+        _oldToken.mint(address(this), amount_);
 
-        oldToken.approve(address(migrator), amount_ - 1);
+        _oldToken.approve(address(_migrator), amount_ - 1);
 
         vm.expectRevert("M:M:TRANSFER_FROM_FAILED");
-        migrator.migrate(amount_);
+        _migrator.migrate(amount_);
 
         // Approve
-        oldToken.approve(address(migrator), amount_);
+        _oldToken.approve(address(_migrator), amount_);
 
-        migrator.migrate(amount_);
+        _migrator.migrate(amount_);
 
-        assertEq(oldToken.allowance(address(this), address(migrator)), 0);
+        assertEq(_oldToken.allowance(address(this), address(_migrator)), 0);
 
-        assertEq(oldToken.balanceOf(address(this)),     0);
-        assertEq(oldToken.balanceOf(address(migrator)), amount_);
-        assertEq(newToken.balanceOf(address(this)),     amount_);
-        assertEq(newToken.balanceOf(address(migrator)), OLD_SUPPLY - amount_);
+        assertEq(_oldToken.balanceOf(address(this)),      0);
+        assertEq(_oldToken.balanceOf(address(_migrator)), amount_);
+        assertEq(_newToken.balanceOf(address(this)),      amount_);
+        assertEq(_newToken.balanceOf(address(_migrator)), OLD_SUPPLY - amount_);
     }
 
-    function test_migrate_insufficientBalance(uint256 amount_) external {
+    function testFuzz_migrate_insufficientBalance(uint256 amount_) external {
         amount_ = constrictToRange(amount_, 1, OLD_SUPPLY);
 
-        oldToken.mint(address(this), amount_ - 1);
+        _oldToken.mint(address(this), amount_ - 1);
 
-        oldToken.approve(address(migrator), amount_);
+        _oldToken.approve(address(_migrator), amount_);
 
         vm.expectRevert("M:M:TRANSFER_FROM_FAILED");
-        migrator.migrate(amount_);
+        _migrator.migrate(amount_);
 
         // Mint
-        oldToken.mint(address(this), 1);
+        _oldToken.mint(address(this), 1);
 
-        migrator.migrate(amount_);
+        _migrator.migrate(amount_);
 
-        assertEq(oldToken.allowance(address(this), address(migrator)), 0);
+        assertEq(_oldToken.allowance(address(this), address(_migrator)), 0);
 
-        assertEq(oldToken.balanceOf(address(this)),     0);
-        assertEq(oldToken.balanceOf(address(migrator)), amount_);
-        assertEq(newToken.balanceOf(address(this)),     amount_);
-        assertEq(newToken.balanceOf(address(migrator)), OLD_SUPPLY - amount_);
+        assertEq(_oldToken.balanceOf(address(this)),      0);
+        assertEq(_oldToken.balanceOf(address(_migrator)), amount_);
+        assertEq(_newToken.balanceOf(address(this)),      amount_);
+        assertEq(_newToken.balanceOf(address(_migrator)), OLD_SUPPLY - amount_);
     }
 
-    function test_migrate_newTokenInsufficientBalance(uint256 amount_) external {
+    function testFuzz_migrate_newTokenInsufficientBalance(uint256 amount_) external {
         amount_ = constrictToRange(amount_, 1, OLD_SUPPLY);
 
         // Burn new supply that was added in setUp
-        newToken.burn(address(migrator), OLD_SUPPLY - amount_ + 1);
+        _newToken.burn(address(_migrator), OLD_SUPPLY - amount_ + 1);
 
         // Mint amount of old token
-        oldToken.mint(address(this), amount_);
+        _oldToken.mint(address(this), amount_);
 
         // Approve
-        oldToken.approve(address(migrator), amount_);
+        _oldToken.approve(address(_migrator), amount_);
 
         vm.expectRevert("M:M:TRANSFER_FAILED");
-        migrator.migrate(amount_);
+        _migrator.migrate(amount_);
 
-        newToken.mint(address(migrator), 1);
+        _newToken.mint(address(_migrator), 1);
 
-        migrator.migrate(amount_);
+        _migrator.migrate(amount_);
 
-        assertEq(oldToken.allowance(address(this), address(migrator)), 0);
+        assertEq(_oldToken.allowance(address(this), address(_migrator)), 0);
 
-        assertEq(oldToken.balanceOf(address(this)),     0);
-        assertEq(oldToken.balanceOf(address(migrator)), amount_);
-        assertEq(newToken.balanceOf(address(this)),     amount_);
-        assertEq(newToken.balanceOf(address(migrator)), 0);
+        assertEq(_oldToken.balanceOf(address(this)),      0);
+        assertEq(_oldToken.balanceOf(address(_migrator)), amount_);
+        assertEq(_newToken.balanceOf(address(this)),      amount_);
+        assertEq(_newToken.balanceOf(address(_migrator)), 0);
     }
 
-    function test_migrate_success(uint256 amount_) external {
+    function testFuzz_migrate_success(uint256 amount_) external {
         amount_ = constrictToRange(amount_, 1, OLD_SUPPLY);
 
         // Mint amount of old token
-        oldToken.mint(address(this), amount_);
+        _oldToken.mint(address(this), amount_);
 
         // Approve
-        oldToken.approve(address(migrator), amount_);
+        _oldToken.approve(address(_migrator), amount_);
 
-        assertEq(oldToken.allowance(address(this), address(migrator)), amount_);
+        assertEq(_oldToken.allowance(address(this), address(_migrator)), amount_);
 
-        assertEq(oldToken.balanceOf(address(this)),     amount_);
-        assertEq(oldToken.balanceOf(address(migrator)), 0);
-        assertEq(newToken.balanceOf(address(this)),     0);
-        assertEq(newToken.balanceOf(address(migrator)), OLD_SUPPLY);
+        assertEq(_oldToken.balanceOf(address(this)),      amount_);
+        assertEq(_oldToken.balanceOf(address(_migrator)), 0);
+        assertEq(_newToken.balanceOf(address(this)),      0);
+        assertEq(_newToken.balanceOf(address(_migrator)), OLD_SUPPLY);
 
-        migrator.migrate(amount_);
+        _migrator.migrate(amount_);
 
-        assertEq(oldToken.allowance(address(this), address(migrator)), 0);
+        assertEq(_oldToken.allowance(address(this), address(_migrator)), 0);
 
-        assertEq(oldToken.balanceOf(address(this)),     0);
-        assertEq(oldToken.balanceOf(address(migrator)), amount_);
-        assertEq(newToken.balanceOf(address(this)),     amount_);
-        assertEq(newToken.balanceOf(address(migrator)), OLD_SUPPLY - amount_);
+        assertEq(_oldToken.balanceOf(address(this)),      0);
+        assertEq(_oldToken.balanceOf(address(_migrator)), amount_);
+        assertEq(_newToken.balanceOf(address(this)),      amount_);
+        assertEq(_newToken.balanceOf(address(_migrator)), OLD_SUPPLY - amount_);
     }
 
-    function test_migration_specifiedOwner(uint256 amount_) external {
+    function testFuzz_migration_specifiedOwner(uint256 amount_) external {
         amount_ = constrictToRange(amount_, 1, OLD_SUPPLY);
 
         SomeAccount someAccount = new SomeAccount();
 
         // Mint amount of old token
-        oldToken.mint(address(someAccount), amount_);
+        _oldToken.mint(address(someAccount), amount_);
 
         // Approve
-        someAccount.approve(address(oldToken), address(migrator), amount_);
+        someAccount.approve(address(_oldToken), address(_migrator), amount_);
 
-        assertEq(oldToken.allowance(address(someAccount), address(migrator)), amount_);
+        assertEq(_oldToken.allowance(address(someAccount), address(_migrator)), amount_);
 
-        assertEq(oldToken.balanceOf(address(someAccount)), amount_);
-        assertEq(oldToken.balanceOf(address(migrator)),    0);
-        assertEq(newToken.balanceOf(address(someAccount)), 0);
-        assertEq(newToken.balanceOf(address(migrator)),    OLD_SUPPLY);
+        assertEq(_oldToken.balanceOf(address(someAccount)), amount_);
+        assertEq(_oldToken.balanceOf(address(_migrator)),   0);
+        assertEq(_newToken.balanceOf(address(someAccount)), 0);
+        assertEq(_newToken.balanceOf(address(_migrator)),   OLD_SUPPLY);
 
-        migrator.migrate(address(someAccount), amount_);
+        _migrator.migrate(address(someAccount), amount_);
 
-        assertEq(oldToken.allowance(address(someAccount), address(migrator)), 0);
+        assertEq(_oldToken.allowance(address(someAccount), address(_migrator)), 0);
 
-        assertEq(oldToken.balanceOf(address(someAccount)), 0);
-        assertEq(oldToken.balanceOf(address(migrator)),    amount_);
-        assertEq(newToken.balanceOf(address(someAccount)), amount_);
-        assertEq(newToken.balanceOf(address(migrator)),    OLD_SUPPLY - amount_);
+        assertEq(_oldToken.balanceOf(address(someAccount)), 0);
+        assertEq(_oldToken.balanceOf(address(_migrator)),   amount_);
+        assertEq(_newToken.balanceOf(address(someAccount)), amount_);
+        assertEq(_newToken.balanceOf(address(_migrator)),   OLD_SUPPLY - amount_);
     }
 
-    function test_migrate_partialMigration(uint256 amount_, uint256 partialAmount_) external {
+    function testFuzz_migrate_partialMigration(uint256 amount_, uint256 partialAmount_) external {
         amount_        = constrictToRange(amount_,        2, OLD_SUPPLY);
         partialAmount_ = constrictToRange(partialAmount_, 1, amount_ - 1);
 
         // Mint amount of old token
-        oldToken.mint(address(this), amount_);
+        _oldToken.mint(address(this), amount_);
 
         // Approve partial
-        oldToken.approve(address(migrator), partialAmount_);
+        _oldToken.approve(address(_migrator), partialAmount_);
 
-        assertEq(oldToken.allowance(address(this), address(migrator)), partialAmount_);
+        assertEq(_oldToken.allowance(address(this), address(_migrator)), partialAmount_);
 
-        assertEq(oldToken.balanceOf(address(this)),     amount_);
-        assertEq(oldToken.balanceOf(address(migrator)), 0);
-        assertEq(newToken.balanceOf(address(this)),     0);
-        assertEq(newToken.balanceOf(address(migrator)), OLD_SUPPLY);
+        assertEq(_oldToken.balanceOf(address(this)),      amount_);
+        assertEq(_oldToken.balanceOf(address(_migrator)), 0);
+        assertEq(_newToken.balanceOf(address(this)),      0);
+        assertEq(_newToken.balanceOf(address(_migrator)), OLD_SUPPLY);
 
-        migrator.migrate(partialAmount_);
+        _migrator.migrate(partialAmount_);
 
-        assertEq(oldToken.allowance(address(this), address(migrator)), 0);
+        assertEq(_oldToken.allowance(address(this), address(_migrator)), 0);
 
-        assertEq(oldToken.balanceOf(address(this)),     amount_ - partialAmount_);
-        assertEq(oldToken.balanceOf(address(migrator)), partialAmount_);
-        assertEq(newToken.balanceOf(address(this)),     partialAmount_);
-        assertEq(newToken.balanceOf(address(migrator)), OLD_SUPPLY - partialAmount_);
+        assertEq(_oldToken.balanceOf(address(this)),      amount_ - partialAmount_);
+        assertEq(_oldToken.balanceOf(address(_migrator)), partialAmount_);
+        assertEq(_newToken.balanceOf(address(this)),      partialAmount_);
+        assertEq(_newToken.balanceOf(address(_migrator)), OLD_SUPPLY - partialAmount_);
 
         uint256 remaining = amount_ - partialAmount_;
 
-        oldToken.approve(address(migrator), remaining);
+        _oldToken.approve(address(_migrator), remaining);
 
-        migrator.migrate(remaining);
+        _migrator.migrate(remaining);
 
-        assertEq(oldToken.allowance(address(this), address(migrator)), 0);
+        assertEq(_oldToken.allowance(address(this), address(_migrator)), 0);
 
-        assertEq(oldToken.balanceOf(address(this)),     0);
-        assertEq(oldToken.balanceOf(address(migrator)), amount_);
-        assertEq(newToken.balanceOf(address(this)),     amount_);
-        assertEq(newToken.balanceOf(address(migrator)), OLD_SUPPLY - amount_);
+        assertEq(_oldToken.balanceOf(address(this)),      0);
+        assertEq(_oldToken.balanceOf(address(_migrator)), amount_);
+        assertEq(_newToken.balanceOf(address(this)),      amount_);
+        assertEq(_newToken.balanceOf(address(_migrator)), OLD_SUPPLY - amount_);
     }
 
 }
