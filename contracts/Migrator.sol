@@ -22,7 +22,7 @@ contract Migrator {
     }
 
     function migrate(address owner_, uint256 amount_) public {
-        require(amount_ > uint256(0),                                              "M:M:ZERO_AMOUNT");
+        require(amount_ != uint256(0),                                              "M:M:ZERO_AMOUNT");
         require(ERC20Helper.transferFrom(oldToken, owner_, address(this), amount_), "M:M:TRANSFER_FROM_FAILED");
         require(ERC20Helper.transfer(newToken, owner_, amount_),                    "M:M:TRANSFER_FAILED");
     }
