@@ -21,4 +21,11 @@ interface IMigrator {
      */
     function migrate(uint256 amount_) external;
 
+    /**
+     *  @dev   Exchange the oldToken for the same amount of newToken.
+     *  @param owner_ The address of the owner of the oldToken.
+     *  @param amount_ The amount of oldToken to swap for newToken.
+     */
+    function migrate(address owner_, uint256 amount_) external;
+
 }
