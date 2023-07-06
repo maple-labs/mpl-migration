@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-pragma solidity 0.8.7;
+pragma solidity ^0.8.7;
 
 interface IMigrator {
 
@@ -20,5 +20,12 @@ interface IMigrator {
      *  @param amount_ The amount of oldToken to swap for newToken.
      */
     function migrate(uint256 amount_) external;
+
+    /**
+     *  @dev   Exchange the oldToken for the same amount of newToken.
+     *  @param owner_ The address of the owner of the oldToken.
+     *  @param amount_ The amount of oldToken to swap for newToken.
+     */
+    function migrate(address owner_, uint256 amount_) external;
 
 }

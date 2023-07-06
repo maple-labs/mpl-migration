@@ -19,4 +19,4 @@ export RUST_BACKTRACE=full
 
 if [ -z "$test" ]; then match="[contracts/test/*.t.sol]"; else match=$test; fi
 
-forge test --match "$match" -vvv
+forge test --match-test "$match" -vvv
