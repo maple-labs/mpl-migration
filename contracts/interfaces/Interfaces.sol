@@ -6,3 +6,11 @@ interface IERC20Like {
     function decimals() external view returns (uint8 decimals_);
 
 }
+
+interface IGlobalsLike {
+
+    function governor() external view returns (address governor_);
+
+    function operationalAdmin() external view returns (address operationalAdmin_);
+
+}

@@ -7,6 +7,8 @@ import { MockERC20 } from "../modules/erc20/contracts/test/mocks/MockERC20.sol";
 
 import { Migrator } from "../contracts/Migrator.sol";
 
+import { MockGlobals } from "./mocks/Mocks.sol";
+
 contract MigratorConstructorTest is Test {
 
     function test_constructor_zeroScalar() external {
@@ -15,22 +17,86 @@ contract MigratorConstructorTest is Test {
     }
 
     function test_constructor_mismatch_decimals() external {
+        MockGlobals globals = new MockGlobals();
         MockERC20 oldToken = new MockERC20("Old Token", "OT", 18);
         MockERC20 newToken = new MockERC20("New Token", "NT", 17);
 
         vm.expectRevert("M:C:DECIMAL_MISMATCH");
-        new Migrator(address(oldToken), address(newToken), 1);
+        new Migrator(address(globals), address(oldToken), address(newToken), 1);
     }
 
     function test_constructor() external {
-        MockERC20 oldToken = new MockERC20("Old Token", "OT", 18);
-        MockERC20 newToken = new MockERC20("New Token", "NT", 18);
+        MockGlobals globals = new MockGlobals();
+        MockERC20 oldToken  = new MockERC20("Old Token", "OT", 18);
+        MockERC20 newToken  = new MockERC20("New Token", "NT", 18);
 
-        Migrator migrator = new Migrator(address(oldToken), address(newToken), 1);
+        Migrator migrator = new Migrator(address(globals), address(oldToken), address(newToken), 1);
 
-        assertEq(migrator.tokenSplitScalar(), 1);
+        assertEq(migrator.globals(),          address(globals));
         assertEq(migrator.oldToken(),         address(oldToken));
         assertEq(migrator.newToken(),         address(newToken));
+        assertEq(migrator.tokenSplitScalar(), 1);
+    }
+
+}
+
+contract SetActiveTests is Test {
+
+    uint256 internal constant SCALAR     = 10;
+    uint256 internal constant OLD_SUPPLY = 10_000_000 ether;
+
+    address operationalAdmin = makeAddr("operationalAdmin");
+    address governor         = makeAddr("governor");
+    address account          = makeAddr("account");
+
+    Migrator    internal _migrator;
+    MockERC20   internal _oldToken;
+    MockERC20   internal _newToken;
+    MockGlobals internal _globals;
+
+    function setUp() external {
+        _globals = new MockGlobals();
+
+        _globals.__setGovernor(governor);
+        _globals.__setOperationalAdmin(operationalAdmin);
+
+        _oldToken = new MockERC20("Old Token", "OT", 18);
+        _newToken = new MockERC20("New Token", "NT", 18);
+
+        _migrator = new Migrator(address(_globals), address(_oldToken), address(_newToken), SCALAR);
+    }
+
+    function test_setActive_notProtocolAdmin() external {
+        vm.expectRevert("M:SA:NOT_PROTOCOL_ADMIN");
+        _migrator.setActive(false);
+    }
+
+    function test_setActive_withGovernor() external {
+        assertEq(_migrator.active(), false);
+
+        vm.prank(governor);
+        _migrator.setActive(true);
+
+        assertEq(_migrator.active(), true);
+
+        vm.prank(governor);
+        _migrator.setActive(false);
+
+        assertEq(_migrator.active(), false);
+    }
+
+    function test_setActive_withOperationalAdmin() external {
+        assertEq(_migrator.active(), false);
+
+        vm.prank(operationalAdmin);
+        _migrator.setActive(true);
+
+        assertEq(_migrator.active(), true);
+
+        vm.prank(operationalAdmin);
+        _migrator.setActive(false);
+
+        assertEq(_migrator.active(), false);
     }
 
 }
@@ -40,17 +106,26 @@ contract MigratorTest is Test {
     uint256 internal constant SCALAR     = 10;
     uint256 internal constant OLD_SUPPLY = 10_000_000e18;
 
-    address account = makeAddr("account");
+    address operationalAdmin = makeAddr("operationalAdmin");
+    address account          = makeAddr("account");
 
-    Migrator  internal _migrator;
-    MockERC20 internal _oldToken;
-    MockERC20 internal _newToken;
+    Migrator    internal _migrator;
+    MockERC20   internal _oldToken;
+    MockERC20   internal _newToken;
+    MockGlobals internal _globals;
 
     function setUp() external {
+        _globals = new MockGlobals();
+
         _oldToken = new MockERC20("Old Token", "OT", 18);
         _newToken = new MockERC20("New Token", "NT", 18);
 
-        _migrator = new Migrator(address(_oldToken), address(_newToken), SCALAR);
+        _migrator = new Migrator(address(_globals), address(_oldToken), address(_newToken), SCALAR);
+
+        _globals.__setOperationalAdmin(operationalAdmin);
+
+        vm.prank(operationalAdmin);
+        _migrator.setActive(true);
 
         // Mint new token to migrator
         _newToken.mint(address(_migrator), OLD_SUPPLY * SCALAR);
@@ -73,6 +148,14 @@ contract MigratorTest is Test {
         assertEq(_oldToken.balanceOf(address(_migrator)), 1);
         assertEq(_newToken.balanceOf(address(this)),      newAmount);
         assertEq(_newToken.balanceOf(address(_migrator)), (OLD_SUPPLY * SCALAR)- newAmount);
+    }
+
+    function test_migrate_inactive() external {
+        vm.prank(operationalAdmin);
+        _migrator.setActive(false);
+
+        vm.expectRevert("M:M:INACTIVE");
+        _migrator.migrate(1);
     }
 
     function testFuzz_migrate_insufficientApproval(uint256 amount_) external {
@@ -261,15 +344,21 @@ contract TokenSplitScalars is Test {
     
     uint256 internal constant OLD_SUPPLY = 10_000_000 ether;
 
-    address account = makeAddr("account");
+    address operationalAdmin = makeAddr("operationalAdmin");
+    address account          = makeAddr("account");
 
     Migrator  internal _migrator;
     MockERC20 internal _oldToken;
     MockERC20 internal _newToken;
+    MockGlobals internal _globals;
 
     function setUp() external {
+        _globals = new MockGlobals();
+
         _oldToken = new MockERC20("Old Token", "OT", 18);
         _newToken = new MockERC20("New Token", "NT", 18);
+
+        _globals.__setOperationalAdmin(operationalAdmin);
     }
 
     function testFuzz_tokenSplitScalar(uint256 amount_, uint16 scalar_) external {
@@ -279,7 +368,10 @@ contract TokenSplitScalars is Test {
 
         uint256 newAmount = amount_ * scalar_;
 
-        _migrator = new Migrator(address(_oldToken), address(_newToken), scalar_);
+        _migrator = new Migrator(address(_globals), address(_oldToken), address(_newToken), scalar_);
+
+        vm.prank(operationalAdmin);
+        _migrator.setActive(true);
 
         _newToken.mint(address(_migrator), OLD_SUPPLY * scalar_);
 
