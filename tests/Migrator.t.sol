@@ -250,3 +250,52 @@ contract MigratorTest is Test {
     }
 
 }
+
+contract TokenSplitScalars is Test {
+    
+    uint256 internal constant OLD_SUPPLY = 10_000_000 ether;
+
+    address account = makeAddr("account");
+
+    Migrator  internal _migrator;
+    MockERC20 internal _oldToken;
+    MockERC20 internal _newToken;
+
+    function setUp() external {
+        _oldToken = new MockERC20("Old Token", "OT", 18);
+        _newToken = new MockERC20("New Token", "NT", 18);
+    }
+
+    function testFuzz_tokenSplitScalar(uint256 amount_, uint16 scalar_) external {
+        vm.assume(scalar_ > 0);
+        
+        amount_ = bound(amount_, 1, OLD_SUPPLY);
+
+        uint256 newAmount = amount_ * scalar_;
+
+        _migrator = new Migrator(address(_oldToken), address(_newToken), scalar_);
+
+        _newToken.mint(address(_migrator), OLD_SUPPLY * scalar_);
+
+        _oldToken.mint(address(this), amount_);
+
+        // Approve
+        _oldToken.approve(address(_migrator), amount_);
+
+        assertEq(_oldToken.allowance(address(this), address(_migrator)), amount_);
+
+        assertEq(_oldToken.balanceOf(address(this)),      amount_);
+        assertEq(_oldToken.balanceOf(address(_migrator)), 0);
+        assertEq(_newToken.balanceOf(address(this)),      0);
+        assertEq(_newToken.balanceOf(address(_migrator)), OLD_SUPPLY * scalar_);
+
+        _migrator.migrate(amount_);
+
+        assertEq(_oldToken.allowance(address(this), address(_migrator)), 0);
+
+        assertEq(_oldToken.balanceOf(address(this)),      0);
+        assertEq(_oldToken.balanceOf(address(_migrator)), amount_);
+        assertEq(_newToken.balanceOf(address(this)),      newAmount);
+        assertEq(_newToken.balanceOf(address(_migrator)), (OLD_SUPPLY  * scalar_) - newAmount);
+    }
+}
