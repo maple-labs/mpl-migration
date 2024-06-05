@@ -4,6 +4,6 @@
 [submodule "modules/erc20-helper"]
 	path = modules/erc20-helper
 	url = git@github.com:maple-labs/erc20-helper.git
-[submodule "modules/contract-test-utils"]
-	path = modules/contract-test-utils
-	url = git@github.com:maple-labs/contract-test-utils.git
+[submodule "modules/forge-std"]
+	path = modules/forge-std
+	url = git@github.com:foundry-rs/forge-std.git

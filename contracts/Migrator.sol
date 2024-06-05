@@ -7,6 +7,8 @@ import { IERC20Like } from "./interfaces/Interfaces.sol";
 
 contract Migrator {
 
+    uint256 public constant SCALER = 10;
+
     address public immutable newToken;
     address public immutable oldToken;
 
@@ -23,8 +25,11 @@ contract Migrator {
 
     function migrate(address owner_, uint256 amount_) public {
         require(amount_ != uint256(0),                                              "M:M:ZERO_AMOUNT");
+
+        uint256 outputAmount = amount_ * SCALER;
+
         require(ERC20Helper.transferFrom(oldToken, owner_, address(this), amount_), "M:M:TRANSFER_FROM_FAILED");
-        require(ERC20Helper.transfer(newToken, owner_, amount_),                    "M:M:TRANSFER_FAILED");
+        require(ERC20Helper.transfer(newToken, owner_, outputAmount),               "M:M:TRANSFER_FAILED");
     }
 
 }
