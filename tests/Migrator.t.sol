@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 pragma solidity 0.8.7;
 
-import { Test } from "../../modules/forge-std/src/Test.sol";
+import { Test } from "../modules/forge-std/src/Test.sol";
 
-import { IERC20 }    from "../../modules/erc20/contracts/interfaces/IERC20.sol";
-import { MockERC20 } from "../../modules/erc20/contracts/test/mocks/MockERC20.sol";
+import { MockERC20 } from "../modules/erc20/contracts/test/mocks/MockERC20.sol";
 
-import { Migrator } from "../Migrator.sol";
+import { Migrator } from "../contracts/Migrator.sol";
 
 contract MigratorConstructorTest is Test {
 
@@ -15,14 +14,14 @@ contract MigratorConstructorTest is Test {
         MockERC20 newToken = new MockERC20("New Token", "NT", 17);
 
         vm.expectRevert("M:C:DECIMAL_MISMATCH");
-        new Migrator(address(oldToken), address(newToken));
+        new Migrator(address(oldToken), address(newToken), 1);
     }
 
     function test_constructor() external {
         MockERC20 oldToken = new MockERC20("Old Token", "OT", 18);
         MockERC20 newToken = new MockERC20("New Token", "NT", 18);
 
-        Migrator migrator = new Migrator(address(oldToken), address(newToken));
+        Migrator migrator = new Migrator(address(oldToken), address(newToken), 1);
 
         assertEq(migrator.oldToken(), address(oldToken));
         assertEq(migrator.newToken(), address(newToken));
@@ -32,7 +31,7 @@ contract MigratorConstructorTest is Test {
 
 contract MigratorTest is Test {
 
-    uint256 internal constant SCALER = 10;
+    uint256 internal constant SCALAR     = 10;
     uint256 internal constant OLD_SUPPLY = 10_000_000 ether;
 
     address account = makeAddr("account");
@@ -45,10 +44,10 @@ contract MigratorTest is Test {
         _oldToken = new MockERC20("Old Token", "OT", 18);
         _newToken = new MockERC20("New Token", "NT", 18);
 
-        _migrator = new Migrator(address(_oldToken), address(_newToken));
+        _migrator = new Migrator(address(_oldToken), address(_newToken), SCALAR);
 
         // Mint new token to migrator
-        _newToken.mint(address(_migrator), OLD_SUPPLY * SCALER);
+        _newToken.mint(address(_migrator), OLD_SUPPLY * SCALAR);
     }
 
     function test_migrate_zeroAmount() external {
@@ -60,20 +59,20 @@ contract MigratorTest is Test {
 
         _migrator.migrate(1);
 
-        uint256 newAmount = 1 * SCALER;
+        uint256 newAmount = 1 * SCALAR;
 
         assertEq(_oldToken.allowance(address(this), address(_migrator)), 0);
 
         assertEq(_oldToken.balanceOf(address(this)),      0);
         assertEq(_oldToken.balanceOf(address(_migrator)), 1);
         assertEq(_newToken.balanceOf(address(this)),      newAmount);
-        assertEq(_newToken.balanceOf(address(_migrator)), (OLD_SUPPLY * SCALER)- newAmount);
+        assertEq(_newToken.balanceOf(address(_migrator)), (OLD_SUPPLY * SCALAR)- newAmount);
     }
 
     function testFuzz_migrate_insufficientApproval(uint256 amount_) external {
         amount_ = bound(amount_, 1, OLD_SUPPLY);
         
-        uint256 newTokenAmount = amount_ * SCALER;
+        uint256 newTokenAmount = amount_ * SCALAR;
 
         // Mint amount of old token
         _oldToken.mint(address(this), amount_);
@@ -93,7 +92,7 @@ contract MigratorTest is Test {
         assertEq(_oldToken.balanceOf(address(this)),      0);
         assertEq(_oldToken.balanceOf(address(_migrator)), amount_);
         assertEq(_newToken.balanceOf(address(this)),      newTokenAmount);
-        assertEq(_newToken.balanceOf(address(_migrator)), (OLD_SUPPLY * SCALER) - newTokenAmount);
+        assertEq(_newToken.balanceOf(address(_migrator)), (OLD_SUPPLY * SCALAR) - newTokenAmount);
     }
 
     function testFuzz_migrate_insufficientBalance(uint256 amount_) external {
@@ -111,23 +110,23 @@ contract MigratorTest is Test {
 
         _migrator.migrate(amount_);
 
-        uint256 newAmount = amount_ * SCALER;
+        uint256 newAmount = amount_ * SCALAR;
 
         assertEq(_oldToken.allowance(address(this), address(_migrator)), 0);
 
         assertEq(_oldToken.balanceOf(address(this)),      0);
         assertEq(_oldToken.balanceOf(address(_migrator)), amount_);
         assertEq(_newToken.balanceOf(address(this)),      newAmount);
-        assertEq(_newToken.balanceOf(address(_migrator)), (OLD_SUPPLY * SCALER) - newAmount);
+        assertEq(_newToken.balanceOf(address(_migrator)), (OLD_SUPPLY * SCALAR) - newAmount);
     }
 
     function testFuzz_migrate_newTokenInsufficientBalance(uint256 amount_) external {
         amount_ = bound(amount_, 1, OLD_SUPPLY);
 
-        uint256 newAmount = amount_ * SCALER;
+        uint256 newAmount = amount_ * SCALAR;
 
         // Burn new supply that was added in setUp
-        _newToken.burn(address(_migrator), (OLD_SUPPLY * SCALER) - newAmount + 1);
+        _newToken.burn(address(_migrator), (OLD_SUPPLY * SCALAR) - newAmount + 1);
 
         // Mint amount of old token
         _oldToken.mint(address(this), amount_);
@@ -153,7 +152,7 @@ contract MigratorTest is Test {
     function testFuzz_migrate_success(uint256 amount_) external {
         amount_ = bound(amount_, 1, OLD_SUPPLY);
 
-        uint256 newAmount = amount_ * SCALER;
+        uint256 newAmount = amount_ * SCALAR;
 
         // Mint amount of old token
         _oldToken.mint(address(this), amount_);
@@ -166,7 +165,7 @@ contract MigratorTest is Test {
         assertEq(_oldToken.balanceOf(address(this)),      amount_);
         assertEq(_oldToken.balanceOf(address(_migrator)), 0);
         assertEq(_newToken.balanceOf(address(this)),      0);
-        assertEq(_newToken.balanceOf(address(_migrator)), OLD_SUPPLY * SCALER);
+        assertEq(_newToken.balanceOf(address(_migrator)), OLD_SUPPLY * SCALAR);
 
         _migrator.migrate(amount_);
 
@@ -175,13 +174,13 @@ contract MigratorTest is Test {
         assertEq(_oldToken.balanceOf(address(this)),      0);
         assertEq(_oldToken.balanceOf(address(_migrator)), amount_);
         assertEq(_newToken.balanceOf(address(this)),      newAmount);
-        assertEq(_newToken.balanceOf(address(_migrator)), (OLD_SUPPLY  * SCALER) - newAmount);
+        assertEq(_newToken.balanceOf(address(_migrator)), (OLD_SUPPLY  * SCALAR) - newAmount);
     }
 
     function testFuzz_migration_specifiedOwner(uint256 amount_) external {
         amount_ = bound(amount_, 1, OLD_SUPPLY);
 
-        uint256 newAmount = amount_ * SCALER;
+        uint256 newAmount = amount_ * SCALAR;
 
         // Mint amount of old token
         _oldToken.mint(address(account), amount_);
@@ -195,7 +194,7 @@ contract MigratorTest is Test {
         assertEq(_oldToken.balanceOf(address(account)),   amount_);
         assertEq(_oldToken.balanceOf(address(_migrator)), 0);
         assertEq(_newToken.balanceOf(address(account)),   0);
-        assertEq(_newToken.balanceOf(address(_migrator)), OLD_SUPPLY * SCALER);
+        assertEq(_newToken.balanceOf(address(_migrator)), OLD_SUPPLY * SCALAR);
 
         _migrator.migrate(address(account), amount_);
 
@@ -204,15 +203,15 @@ contract MigratorTest is Test {
         assertEq(_oldToken.balanceOf(address(account)),   0);
         assertEq(_oldToken.balanceOf(address(_migrator)), amount_);
         assertEq(_newToken.balanceOf(address(account)),   newAmount);
-        assertEq(_newToken.balanceOf(address(_migrator)), (OLD_SUPPLY * SCALER) - newAmount);
+        assertEq(_newToken.balanceOf(address(_migrator)), (OLD_SUPPLY * SCALAR) - newAmount);
     }
 
     function testFuzz_migrate_partialMigration(uint256 amount_, uint256 partialAmount_) external {
         amount_        = bound(amount_,        2, OLD_SUPPLY);
         partialAmount_ = bound(partialAmount_, 1, amount_ - 1);
 
-        uint256 newAmount        = amount_ * SCALER;
-        uint256 newPartialAmount = partialAmount_ * SCALER;
+        uint256 newAmount        = amount_ * SCALAR;
+        uint256 newPartialAmount = partialAmount_ * SCALAR;
 
         // Mint amount of old token
         _oldToken.mint(address(this), amount_);
@@ -225,7 +224,7 @@ contract MigratorTest is Test {
         assertEq(_oldToken.balanceOf(address(this)),      amount_);
         assertEq(_oldToken.balanceOf(address(_migrator)), 0);
         assertEq(_newToken.balanceOf(address(this)),      0);
-        assertEq(_newToken.balanceOf(address(_migrator)), OLD_SUPPLY * SCALER);
+        assertEq(_newToken.balanceOf(address(_migrator)), OLD_SUPPLY * SCALAR);
 
         _migrator.migrate(partialAmount_);
 
@@ -234,7 +233,7 @@ contract MigratorTest is Test {
         assertEq(_oldToken.balanceOf(address(this)),      amount_ - partialAmount_);
         assertEq(_oldToken.balanceOf(address(_migrator)), partialAmount_);
         assertEq(_newToken.balanceOf(address(this)),      newPartialAmount);
-        assertEq(_newToken.balanceOf(address(_migrator)), (OLD_SUPPLY * SCALER) - newPartialAmount);
+        assertEq(_newToken.balanceOf(address(_migrator)), (OLD_SUPPLY * SCALAR) - newPartialAmount);
 
         uint256 remaining = amount_ - partialAmount_;
 
@@ -247,7 +246,7 @@ contract MigratorTest is Test {
         assertEq(_oldToken.balanceOf(address(this)),      0);
         assertEq(_oldToken.balanceOf(address(_migrator)), amount_);
         assertEq(_newToken.balanceOf(address(this)),      newAmount);
-        assertEq(_newToken.balanceOf(address(_migrator)), (OLD_SUPPLY * SCALER)- newAmount);
+        assertEq(_newToken.balanceOf(address(_migrator)), (OLD_SUPPLY * SCALAR)- newAmount);
     }
 
 }
