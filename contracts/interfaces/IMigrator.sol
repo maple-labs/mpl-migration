@@ -10,7 +10,7 @@ interface IMigrator {
     function active() external view returns (bool active_);
 
     /**
-     *  @dev   Gets the Maple Globals address
+     *  @dev   Gets the Maple Globals address.
      *  @param globals_ The address of the Maple globals.
      */
     function globals() external view returns (address globals_);

@@ -13,7 +13,7 @@ contract MigratorConstructorTest is Test {
 
     function test_constructor_zeroScalar() external {
         vm.expectRevert("M:C:ZERO_SCALAR");
-        new Migrator(address(0), address(0), 0);
+        new Migrator(address(0), address(0), address(0), 0);
     }
 
     function test_constructor_mismatch_decimals() external {
@@ -43,7 +43,7 @@ contract MigratorConstructorTest is Test {
 contract SetActiveTests is Test {
 
     uint256 internal constant SCALAR     = 10;
-    uint256 internal constant OLD_SUPPLY = 10_000_000 ether;
+    uint256 internal constant OLD_SUPPLY = 10_000_000e18;
 
     address operationalAdmin = makeAddr("operationalAdmin");
     address governor         = makeAddr("governor");
@@ -342,7 +342,7 @@ contract MigratorTest is Test {
 
 contract TokenSplitScalars is Test {
     
-    uint256 internal constant OLD_SUPPLY = 10_000_000 ether;
+    uint256 internal constant OLD_SUPPLY = 10_000_000e18;
 
     address operationalAdmin = makeAddr("operationalAdmin");
     address account          = makeAddr("account");

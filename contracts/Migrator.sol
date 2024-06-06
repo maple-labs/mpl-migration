@@ -18,10 +18,11 @@ contract Migrator is IMigrator {
     bool public override active;
 
     constructor(address globals_, address oldToken_, address newToken_, uint256 scalar_) {
+        require(scalar_ > 0, "M:C:ZERO_SCALAR");
+
         require(IERC20Like(newToken_).decimals() == IERC20Like(oldToken_).decimals(), "M:C:DECIMAL_MISMATCH");
 
-        globals = globals_;
-
+        globals  = globals_;
         oldToken = oldToken_;
         newToken = newToken_;
 
