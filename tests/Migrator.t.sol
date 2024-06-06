@@ -9,6 +9,11 @@ import { Migrator } from "../contracts/Migrator.sol";
 
 contract MigratorConstructorTest is Test {
 
+    function test_constructor_zeroScalar() external {
+        vm.expectRevert("M:C:ZERO_SCALAR");
+        new Migrator(address(0), address(0), 0);
+    }
+
     function test_constructor_mismatch_decimals() external {
         MockERC20 oldToken = new MockERC20("Old Token", "OT", 18);
         MockERC20 newToken = new MockERC20("New Token", "NT", 17);
@@ -23,8 +28,9 @@ contract MigratorConstructorTest is Test {
 
         Migrator migrator = new Migrator(address(oldToken), address(newToken), 1);
 
-        assertEq(migrator.oldToken(), address(oldToken));
-        assertEq(migrator.newToken(), address(newToken));
+        assertEq(migrator.tokenSplitScalar(), 1);
+        assertEq(migrator.oldToken(),         address(oldToken));
+        assertEq(migrator.newToken(),         address(newToken));
     }
 
 }
@@ -32,7 +38,7 @@ contract MigratorConstructorTest is Test {
 contract MigratorTest is Test {
 
     uint256 internal constant SCALAR     = 10;
-    uint256 internal constant OLD_SUPPLY = 10_000_000 ether;
+    uint256 internal constant OLD_SUPPLY = 10_000_000e18;
 
     address account = makeAddr("account");
 

@@ -30,8 +30,8 @@ interface IMigrator {
 
     /**
      *  @dev    Get the scalar value for token split.
-     *  @return TOKEN_SPLIT_SCALAR_ The scalar value for token split.
+     *  @return tokenSplitScalar_ The scalar value for token split.
      */
-    function TOKEN_SPLIT_SCALAR() external view returns (uint256 TOKEN_SPLIT_SCALAR_);
+    function tokenSplitScalar() external view returns (uint256 tokenSplitScalar_);
 
 }
