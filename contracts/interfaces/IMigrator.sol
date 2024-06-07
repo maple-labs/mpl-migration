@@ -41,6 +41,12 @@ interface IMigrator {
     function migrate(address owner_, uint256 amount_) external;
 
     /**
+     *  @dev   Set the migrator to active or inactive.
+     *  @param active_ True if migrations are active.
+     */
+    function setActive(bool active_) external;
+
+    /**
      *  @dev    Get the scalar value for token split.
      *  @return tokenSplitScalar_ The scalar value for token split.
      */

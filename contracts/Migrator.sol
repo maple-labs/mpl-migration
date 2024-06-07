@@ -41,7 +41,7 @@ contract Migrator is IMigrator {
         require(ERC20Helper.transfer(newToken, owner_, amount_ * tokenSplitScalar), "M:M:TRANSFER_FAILED");
     }
 
-    function setActive(bool active_) external {
+    function setActive(bool active_) external override {
         require(
             msg.sender == IGlobalsLike(globals).governor() || 
             msg.sender == IGlobalsLike(globals).operationalAdmin(), 
