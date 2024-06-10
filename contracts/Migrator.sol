@@ -43,8 +43,8 @@ contract Migrator is IMigrator {
 
     function setActive(bool active_) external override {
         require(
-            msg.sender == IGlobalsLike(globals).governor() || 
-            msg.sender == IGlobalsLike(globals).operationalAdmin(), 
+            msg.sender == IGlobalsLike(globals).governor() ||
+            msg.sender == IGlobalsLike(globals).operationalAdmin(),
             "M:SA:NOT_PROTOCOL_ADMIN"
         );
 

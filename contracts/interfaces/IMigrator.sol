@@ -14,7 +14,7 @@ interface IMigrator {
      *  @param globals_ The address of the Maple globals.
      */
     function globals() external view returns (address globals_);
- 
+
     /**
      *  @dev    Get address of newToken.
      *  @return newToken_ The address of new token.
