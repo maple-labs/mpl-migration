@@ -77,7 +77,7 @@ contract MigratorTest is Test {
 
     function testFuzz_migrate_insufficientApproval(uint256 amount_) external {
         amount_ = bound(amount_, 1, OLD_SUPPLY);
-        
+
         uint256 newTokenAmount = amount_ * SCALAR;
 
         // Mint amount of old token
@@ -258,7 +258,7 @@ contract MigratorTest is Test {
 }
 
 contract TokenSplitScalars is Test {
-    
+
     uint256 internal constant OLD_SUPPLY = 10_000_000 ether;
 
     address account = makeAddr("account");
@@ -274,7 +274,7 @@ contract TokenSplitScalars is Test {
 
     function testFuzz_tokenSplitScalar(uint256 amount_, uint16 scalar_) external {
         vm.assume(scalar_ > 0);
-        
+
         amount_ = bound(amount_, 1, OLD_SUPPLY);
 
         uint256 newAmount = amount_ * scalar_;
@@ -304,4 +304,5 @@ contract TokenSplitScalars is Test {
         assertEq(_newToken.balanceOf(address(this)),      newAmount);
         assertEq(_newToken.balanceOf(address(_migrator)), (OLD_SUPPLY  * scalar_) - newAmount);
     }
+    
 }
