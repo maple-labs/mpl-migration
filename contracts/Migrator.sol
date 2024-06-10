@@ -5,26 +5,34 @@ import { ERC20Helper } from "../modules/erc20-helper/src/ERC20Helper.sol";
 
 import { IERC20Like } from "./interfaces/Interfaces.sol";
 
-contract Migrator {
+import { IMigrator } from "./interfaces/IMigrator.sol";
 
-    address public immutable newToken;
-    address public immutable oldToken;
+contract Migrator is IMigrator {
 
-    constructor(address oldToken_, address newToken_) {
+    address public immutable override newToken;
+    address public immutable override oldToken;
+
+    uint256 public immutable override tokenSplitScalar;
+
+    constructor(address oldToken_, address newToken_, uint256 scalar_) {
+        require(scalar_ > 0, "M:C:ZERO_SCALAR");
         require(IERC20Like(newToken_).decimals() == IERC20Like(oldToken_).decimals(), "M:C:DECIMAL_MISMATCH");
 
         oldToken = oldToken_;
         newToken = newToken_;
+
+        tokenSplitScalar = scalar_;
     }
 
-    function migrate(uint256 amount_) external {
+    function migrate(uint256 amount_) external override {
         migrate(msg.sender, amount_);
     }
 
-    function migrate(address owner_, uint256 amount_) public {
-        require(amount_ != uint256(0),                                              "M:M:ZERO_AMOUNT");
+    function migrate(address owner_, uint256 amount_) public override {
+        require(amount_ != uint256(0), "M:M:ZERO_AMOUNT");
+
         require(ERC20Helper.transferFrom(oldToken, owner_, address(this), amount_), "M:M:TRANSFER_FROM_FAILED");
-        require(ERC20Helper.transfer(newToken, owner_, amount_),                    "M:M:TRANSFER_FAILED");
+        require(ERC20Helper.transfer(newToken, owner_, amount_ * tokenSplitScalar), "M:M:TRANSFER_FAILED");
     }
 
 }

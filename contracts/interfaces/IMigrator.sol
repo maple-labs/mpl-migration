@@ -28,4 +28,10 @@ interface IMigrator {
      */
     function migrate(address owner_, uint256 amount_) external;
 
+    /**
+     *  @dev    Get the scalar value for token split.
+     *  @return tokenSplitScalar_ The scalar value for token split.
+     */
+    function tokenSplitScalar() external view returns (uint256 tokenSplitScalar_);
+
 }
