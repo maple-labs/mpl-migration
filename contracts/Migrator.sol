@@ -29,16 +29,18 @@ contract Migrator is IMigrator {
         tokenSplitScalar = scalar_;
     }
 
-    function migrate(uint256 amount_) external override {
-        migrate(msg.sender, amount_);
+    function migrate(uint256 oldTokenAmount_) external override returns (uint256 newTokenAmount_) {
+        newTokenAmount_ = migrate(msg.sender, oldTokenAmount_);
     }
 
-    function migrate(address owner_, uint256 amount_) public override {
-        require(active,                "M:M:INACTIVE");
-        require(amount_ != uint256(0), "M:M:ZERO_AMOUNT");
+    function migrate(address owner_, uint256 oldTokenAmount_) public override returns (uint256 newTokenAmount_) {
+        require(active,                        "M:M:INACTIVE");
+        require(oldTokenAmount_ != uint256(0), "M:M:ZERO_AMOUNT");
 
-        require(ERC20Helper.transferFrom(oldToken, owner_, address(this), amount_), "M:M:TRANSFER_FROM_FAILED");
-        require(ERC20Helper.transfer(newToken, owner_, amount_ * tokenSplitScalar), "M:M:TRANSFER_FAILED");
+        newTokenAmount_ = oldTokenAmount_ * tokenSplitScalar;
+
+        require(ERC20Helper.transferFrom(oldToken, owner_, address(this), oldTokenAmount_), "M:M:TRANSFER_FROM_FAILED");
+        require(ERC20Helper.transfer(newToken, owner_, newTokenAmount_),                    "M:M:TRANSFER_FAILED");
     }
 
     function setActive(bool active_) external override {
