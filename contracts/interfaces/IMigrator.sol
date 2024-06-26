@@ -29,16 +29,18 @@ interface IMigrator {
 
     /**
      *  @dev   Exchange the oldToken for the same amount of newToken.
-     *  @param amount_ The amount of oldToken to swap for newToken.
+     *  @param  amount_         The amount of oldToken to swap for newToken.
+     *  @return migratedAmount_ The amount of newToken received.
      */
-    function migrate(uint256 amount_) external;
+    function migrate(uint256 amount_) external returns (uint256 migratedAmount_);
 
     /**
      *  @dev   Exchange the oldToken for the same amount of newToken.
-     *  @param owner_ The address of the owner of the oldToken.
-     *  @param amount_ The amount of oldToken to swap for newToken.
+     *  @param  owner_          The address of the owner of the oldToken.
+     *  @param  amount_         The amount of oldToken to swap for newToken.
+     *  @return migratedAmount_ The amount of newToken received.
      */
-    function migrate(address owner_, uint256 amount_) external;
+    function migrate(address owner_, uint256 amount_) external returns (uint256 migratedAmount_);
 
     /**
      *  @dev   Set the migrator to active or inactive.
