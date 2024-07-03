@@ -106,8 +106,9 @@ contract MigratorTest is Test {
     uint256 internal constant SCALAR     = 10;
     uint256 internal constant OLD_SUPPLY = 10_000_000e18;
 
-    address operationalAdmin = makeAddr("operationalAdmin");
     address account          = makeAddr("account");
+    address operationalAdmin = makeAddr("operationalAdmin");
+    address recipient        = makeAddr("recipient");
 
     Migrator    internal _migrator;
     MockERC20   internal _oldToken;
@@ -266,7 +267,7 @@ contract MigratorTest is Test {
         assertEq(_newToken.balanceOf(address(_migrator)), (OLD_SUPPLY  * SCALAR) - newAmount);
     }
 
-    function testFuzz_migration_specifiedOwner(uint256 amount_) external {
+    function testFuzz_migration_specifiedRecipient(uint256 amount_) external {
         amount_ = bound(amount_, 1, OLD_SUPPLY);
 
         uint256 newAmount = amount_ * SCALAR;
@@ -282,17 +283,24 @@ contract MigratorTest is Test {
 
         assertEq(_oldToken.balanceOf(address(account)),   amount_);
         assertEq(_oldToken.balanceOf(address(_migrator)), 0);
+        assertEq(_oldToken.balanceOf(address(recipient)), 0);
+
         assertEq(_newToken.balanceOf(address(account)),   0);
         assertEq(_newToken.balanceOf(address(_migrator)), OLD_SUPPLY * SCALAR);
+        assertEq(_newToken.balanceOf(address(recipient)), 0);
 
-        _migrator.migrate(address(account), amount_);
+        vm.prank(account);
+        _migrator.migrate(address(recipient), amount_);
 
         assertEq(_oldToken.allowance(address(account), address(_migrator)), 0);
 
         assertEq(_oldToken.balanceOf(address(account)),   0);
         assertEq(_oldToken.balanceOf(address(_migrator)), amount_);
-        assertEq(_newToken.balanceOf(address(account)),   newAmount);
+        assertEq(_oldToken.balanceOf(address(recipient)), 0);
+
+        assertEq(_newToken.balanceOf(address(account)),   0);
         assertEq(_newToken.balanceOf(address(_migrator)), (OLD_SUPPLY * SCALAR) - newAmount);
+        assertEq(_newToken.balanceOf(address(recipient)), newAmount);
     }
 
     function testFuzz_migrate_partialMigration(uint256 amount_, uint256 partialAmount_) external {
