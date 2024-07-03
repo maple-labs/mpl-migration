@@ -109,6 +109,9 @@ contract MigratorTest is Test {
     address account          = makeAddr("account");
     address operationalAdmin = makeAddr("operationalAdmin");
     address recipient        = makeAddr("recipient");
+    address sender           = makeAddr("sender");
+
+    uint256 amount = 100e18;
 
     Migrator    internal _migrator;
     MockERC20   internal _oldToken;
@@ -157,6 +160,32 @@ contract MigratorTest is Test {
 
         vm.expectRevert("M:M:INACTIVE");
         _migrator.migrate(1);
+    }
+
+    function test_migrate_recipient() external {
+        _oldToken.mint(address(sender), amount);
+
+        vm.prank(sender);
+        _oldToken.approve(address(_migrator), amount);
+
+        assertEq(_oldToken.balanceOf(address(sender)),    amount);
+        assertEq(_oldToken.balanceOf(address(_migrator)), 0);
+        assertEq(_oldToken.balanceOf(address(recipient)), 0);
+
+        assertEq(_newToken.balanceOf(address(sender)),    0);
+        assertEq(_newToken.balanceOf(address(_migrator)), OLD_SUPPLY * SCALAR);
+        assertEq(_newToken.balanceOf(address(recipient)), 0);
+
+        vm.prank(sender);
+        _migrator.migrate(address(recipient), amount);
+
+        assertEq(_oldToken.balanceOf(address(sender)),    0);
+        assertEq(_oldToken.balanceOf(address(_migrator)), amount);
+        assertEq(_oldToken.balanceOf(address(recipient)), 0);
+
+        assertEq(_newToken.balanceOf(address(sender)),    0);
+        assertEq(_newToken.balanceOf(address(_migrator)), (OLD_SUPPLY - amount) * SCALAR);
+        assertEq(_newToken.balanceOf(address(recipient)), amount * SCALAR);
     }
 
     function testFuzz_migrate_insufficientApproval(uint256 amount_) external {
